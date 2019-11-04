@@ -3,6 +3,7 @@ import random
 from copy import deepcopy
 import math
 
+from Text import generate_weight_matrix, compute_longest_path_weight
 from greedy import greedy_optimizer
 
 from nltk.tokenize import RegexpTokenizer
@@ -27,6 +28,11 @@ class FireflyOptimizer(object):
         self._sentences_rep = sentences_rep
         self._max_length = max_length
 
+        self._docs_weights = generate_weight_matrix(self._docs_representation)
+        self._N = len(self._docs_representation)
+        self._M = max(self._docs_weights)
+        self._A = compute_longest_path_weight(self._docs_representation)
+
         self._sentences = []
         self._sentence_tokens = []
         for title, doc in docs:
@@ -40,15 +46,16 @@ class FireflyOptimizer(object):
 
     def _inilialize_population(self):
         # print len(self._sentences)
-        print 'Initializing fireflies'
+        print 'Initializing fireflies';
         self._fireflies = np.random.randint(low=0, high=2, size=(self._population_size, len(self._sentences)))
+
 
     def _inilialize_light_intensities(self):
         print 'Initializing light intensities'
-        sys_summary = []
 
         index = 0
         for firefly in self._fireflies:
+            sys_summary = []
             index = 0
             for bit in firefly:
                 if bit == 1:
@@ -56,9 +63,9 @@ class FireflyOptimizer(object):
                 index += 1
             # print sys_summary
             if self._sentences_rep != None:
-                score = self._fitness_fun(sys_summary, self._docs_representation, self._sentences_rep)
+                score = self._fitness_fun(sys_summary, self._A, self._sentences_rep, self._docs, self._N, self._M)
             else:
-                score = self._fitness_fun(sys_summary, self._docs_representation)
+                score = self._fitness_fun(sys_summary, self._A, self._docs, self._N, self._M)
             self._light_intensity.append(score)
         print self._light_intensity
 
@@ -73,7 +80,7 @@ class FireflyOptimizer(object):
         self._inilialize_light_intensities()
         
 
-        for _ in range(iteration):
+        for iter in range(iteration):
             for i in range(self._population_size):
                 for j in range(self._population_size):
                     if self._light_intensity[j] > self._light_intensity[i]:
@@ -85,11 +92,12 @@ class FireflyOptimizer(object):
             firefly_best = firefly_best + 100 * ( np.random.rand(len(self._sentences)) - 0.5 )
             firefly_best = self._normalize(firefly_best)
             sys_summary = self._create_summary(firefly_best)
-            score = self._fitness_fun(sys_summary, self._docs_representation)
+            score = self._fitness_fun(sys_summary, self._A, self._docs, self._N, self._M)
             # if score > self._light_intensity[-1]:
             self._light_intensity[-1] = score
             self._fireflies[-1] = firefly_best
 
+            print "Iteration -- ", iter, ": score: ", score
 
 
         self._light_intensity.sort()
@@ -110,7 +118,7 @@ class FireflyOptimizer(object):
         index = 0
         # print new_firefly
         sys_summary = self._create_summary(normalized_new_firefly)
-        new_light_intensity = self._fitness_fun(sys_summary, self._docs_representation)
+        new_light_intensity = self._fitness_fun(sys_summary, self._A, self._docs, self._N, self._M)
 
         # print 'New: ', new_light_intensity
         # print self._light_intensity[i]
@@ -130,7 +138,7 @@ class FireflyOptimizer(object):
         return (x - min(x)) / (max(x) - min(x))
 
     def _create_summary(self, firefly):
-        print firefly
+        #print firefly
         sys_summary = []
         index = 0
         for bit in firefly:

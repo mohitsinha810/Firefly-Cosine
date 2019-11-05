@@ -70,7 +70,7 @@ def cosine(v1, v2):
     v1 = np.array(v1)
     v2 = np.array(v2)
 
-    return np.dot(v1, v2) / (np.sqrt(np.sum(v1 ** 2)) * np.sqrt(np.sum(v2 ** 2)))
+    return np.dot(v1, v2) / 1 + (np.sqrt(np.sum(v1 ** 2)) * np.sqrt(np.sum(v2 ** 2)))
 
 
 def fitness(sys_summary, docs_weight_matrix, docs, N, M):
@@ -239,7 +239,7 @@ def sim(docs_representation, i, j):
 
 def compute_longest_path_weight(docs_representation):
     m = len(docs_representation)
-    n = len(docs_representation)
+    n = 6
 
 
     A = [[0 for x in range(n)] for y in range(m)]

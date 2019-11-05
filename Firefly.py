@@ -48,6 +48,7 @@ class FireflyOptimizer(object):
         # print len(self._sentences)
         print 'Initializing fireflies';
         self._fireflies = np.random.randint(low=0, high=2, size=(self._population_size, len(self._sentences)))
+        self._fireflies = self._fireflies.astype('float64')
 
 
     def _inilialize_light_intensities(self):
@@ -55,12 +56,7 @@ class FireflyOptimizer(object):
 
         index = 0
         for firefly in self._fireflies:
-            sys_summary = []
-            index = 0
-            for bit in firefly:
-                if bit == 1:
-                    sys_summary.append(self._sentences[index])
-                index += 1
+            sys_summary = self._create_summary(firefly)
             # print sys_summary
             if self._sentences_rep != None:
                 score = self._fitness_fun(sys_summary, self._A, self._sentences_rep, self._docs, self._N, self._M)
@@ -78,41 +74,57 @@ class FireflyOptimizer(object):
         # print len(self._sentences)
 
         self._inilialize_light_intensities()
+
+        firefly_best = []
+        firefly_best_score = 0
+        noChange = 0
+        alpha = 1
         
 
         for iter in range(iteration):
+            if noChange >= 500:
+                alpha += 1
             for i in range(self._population_size):
                 for j in range(self._population_size):
                     if self._light_intensity[j] > self._light_intensity[i]:
-                        self._move_firefly(i, j)
+                        self._move_firefly(i, j, alpha)
 
             # sorted_fireflies = [x for _,x in sorted(zip(self._light_intensity,self._fireflies))]
             # self._fireflies = np.array(sorted_fireflies)
-            firefly_best = self._fireflies[-1]
-            firefly_best = firefly_best + 100 * ( np.random.rand(len(self._sentences)) - 0.5 )
-            firefly_best = self._normalize(firefly_best)
+            new_firefly_best = self._fireflies[-1]
+            new_firefly_best = new_firefly_best + alpha * ( np.random.rand(len(self._sentences)) - 0.5 )
+            new_firefly_best = self._normalize(new_firefly_best)
+            new_sys_summary = self._create_summary(new_firefly_best)
             sys_summary = self._create_summary(firefly_best)
-            score = self._fitness_fun(sys_summary, self._A, self._docs, self._N, self._M)
+            new_score = self._fitness_fun(new_sys_summary, self._A, self._docs, self._N, self._M)
+            if new_score > firefly_best_score:
+                firefly_best = new_firefly_best
+                firefly_best_score = new_score
+                noChange = 0
+            else:
+                self._fireflies[-1] = firefly_best_score
+                noChange += 1
             # if score > self._light_intensity[-1]:
-            self._light_intensity[-1] = score
+            self._light_intensity[-1] = firefly_best_score
             self._fireflies[-1] = firefly_best
 
-            print "Iteration -- ", iter, ": score: ", score
+            print "Iteration -- ", iter, ": Summary: ", sys_summary
+            print "Score: ", firefly_best_score
 
 
         self._light_intensity.sort()
         print self._light_intensity
-        print self._create_final_summary(self._fireflies[-1])
+        print self._create_summary(self._fireflies[-1])
 
 
-    def _move_firefly(self, i, j):
+    def _move_firefly(self, i, j, alpha):
 
         firefly_i = self._fireflies[i]
         firefly_j = self._fireflies[j]
         # print firefly_i
         # print firefly_j
 
-        new_firefly = firefly_i + 1 * math.e**(-1 * self._distance(firefly_i, firefly_j)**2) * (firefly_j - firefly_i) + 100 * ( np.random.rand(len(self._sentences)) - 0.5 )
+        new_firefly = firefly_i + 1 * math.e**(-1 * self._distance(firefly_i, firefly_j)**2) * (firefly_j - firefly_i) + 2*alpha * ( np.random.rand(len(self._sentences)) - 0.5 )
         normalized_new_firefly = self._normalize(new_firefly)
         sys_summary = []
         index = 0
@@ -140,16 +152,30 @@ class FireflyOptimizer(object):
     def _create_summary(self, firefly):
         #print firefly
         sys_summary = []
-        index = 0
-        for bit in firefly:
-            if bit > 0.5:
-                sys_summary.append(self._sentences[index])
-            index += 1
+
+        updatedFirefly = {}
+
+        for i in range(len(firefly)):
+            updatedFirefly[i] = firefly[i]
+
+        # sort the firefly on the basis of values
+        sortedFirefly = sorted(updatedFirefly.items(), key=lambda kv: kv[1], reverse=True)
+
+        # Limit the firefly to the summary length
+        noOfSentences = 0
+        for key, value in sortedFirefly:
+            sentence = self._sentences[key]
+            sys_summary.append(sentence)
+            noOfSentences += 1
+            if noOfSentences == 5:
+                break
+
         return sys_summary
 
 
     def _create_final_summary(self, firefly):
         # print firefly
+
         indices = []
         for i in range(len(self._sentences)):
             indices.append(i)

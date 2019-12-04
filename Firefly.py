@@ -108,8 +108,7 @@ class FireflyOptimizer(object):
             self._light_intensity[-1] = firefly_best_score
             self._fireflies[-1] = firefly_best
 
-            print "Iteration -- ", iter, ": Summary: ", sys_summary
-            print "Score: ", firefly_best_score
+            print "Iteration--", iter, " : ", self._fireflies[-1]
 
 
         self._light_intensity.sort()
@@ -124,7 +123,8 @@ class FireflyOptimizer(object):
         # print firefly_i
         # print firefly_j
 
-        new_firefly = firefly_i + 1 * math.e**(-1 * self._distance(firefly_i, firefly_j)**2) * (firefly_j - firefly_i) + 2*alpha * ( np.random.rand(len(self._sentences)) - 0.5 )
+        new_firefly = firefly_i + 1 * math.e**(-1 * self._distance(firefly_i, firefly_j)**2) \
+                      * (firefly_j - firefly_i) + 2*alpha * ( np.random.rand(len(self._sentences)) - 0.5 )
         normalized_new_firefly = self._normalize(new_firefly)
         sys_summary = []
         index = 0
@@ -181,7 +181,7 @@ class FireflyOptimizer(object):
             indices.append(i)
         sorted_indices = [x for _,x in sorted(zip(firefly,indices))]
 
-        top_indices = sorted_indices[:5]
+        top_indices = sorted_indices[:self._max_length]
 
         sys_summary = []
         for index in top_indices:

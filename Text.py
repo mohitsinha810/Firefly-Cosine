@@ -239,7 +239,7 @@ def sim(docs_representation, i, j):
 
 def compute_longest_path_weight(docs_representation):
     m = len(docs_representation)
-    n = 6
+    n = 7
 
 
     A = [[0 for x in range(n)] for y in range(m)]
